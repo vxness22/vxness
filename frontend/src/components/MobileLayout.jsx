@@ -44,7 +44,7 @@ const MobileLayout = ({ children, activeTab = 'home' }) => {
     { name: 'Instructions', icon: FileText, path: '/instructions' },
   ]
 
-  // Only show mobile layout on mobile devices
+  // Only show mobile layout on mobile
   if (!isMobile) {
     return children
   }
