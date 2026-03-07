@@ -28,7 +28,9 @@ import {
 
   Building2,
 
-  Smartphone
+  Smartphone,
+
+  Pencil
 
 } from 'lucide-react'
 
@@ -53,6 +55,14 @@ const AdminFundManagement = () => {
   const [userDetails, setUserDetails] = useState(null)
 
   const [showDetailsModal, setShowDetailsModal] = useState(false)
+
+  const [showEditModal, setShowEditModal] = useState(false)
+
+  const [editTxn, setEditTxn] = useState(null)
+
+  const [editForm, setEditForm] = useState({ amount: '', bonusAmount: '', date: '' })
+
+  const [editLoading, setEditLoading] = useState(false)
 
 
 
@@ -283,6 +293,120 @@ const AdminFundManagement = () => {
     setSelectedTxn(null)
 
     setUserDetails(null)
+
+  }
+
+
+
+  const openEditModal = (txn) => {
+
+    setEditTxn(txn)
+
+    setEditForm({
+
+      amount: txn.amount || '',
+
+      bonusAmount: txn.bonusAmount || 0,
+
+      date: txn.createdAt ? new Date(txn.createdAt).toISOString().slice(0, 16) : ''
+
+    })
+
+    setShowEditModal(true)
+
+  }
+
+
+
+  const closeEditModal = () => {
+
+    setShowEditModal(false)
+
+    setEditTxn(null)
+
+    setEditForm({ amount: '', bonusAmount: '', date: '' })
+
+  }
+
+
+
+  const handleEditSubmit = async () => {
+
+    if (!editTxn) return
+
+    setEditLoading(true)
+
+    try {
+
+      // Update date
+
+      if (editForm.date) {
+
+        const dateRes = await fetch(`${API_URL}/wallet/transaction/${editTxn._id}/date`, {
+
+          method: 'PUT',
+
+          headers: { 'Content-Type': 'application/json' },
+
+          body: JSON.stringify({ date: new Date(editForm.date).toISOString() })
+
+        })
+
+        if (!dateRes.ok) {
+
+          const data = await dateRes.json()
+
+          throw new Error(data.message || 'Failed to update date')
+
+        }
+
+      }
+
+
+
+      // Update amount and bonus
+
+      const updateRes = await fetch(`${API_URL}/wallet/transaction/${editTxn._id}/edit`, {
+
+        method: 'PUT',
+
+        headers: { 'Content-Type': 'application/json' },
+
+        body: JSON.stringify({
+
+          amount: parseFloat(editForm.amount) || editTxn.amount,
+
+          bonusAmount: parseFloat(editForm.bonusAmount) || 0
+
+        })
+
+      })
+
+      const updateData = await updateRes.json()
+
+      if (!updateRes.ok) {
+
+        throw new Error(updateData.message || 'Failed to update transaction')
+
+      }
+
+
+
+      toast.success('Transaction updated successfully!')
+
+      closeEditModal()
+
+      fetchTransactions()
+
+    } catch (error) {
+
+      console.error('Error updating transaction:', error)
+
+      toast.error(error.message || 'Error updating transaction')
+
+    }
+
+    setEditLoading(false)
 
   }
 
@@ -522,25 +646,35 @@ const AdminFundManagement = () => {
 
                   </div>
 
-                  {isPending(txn.status) && (
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-600">
 
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-600">
+                    <button onClick={() => openEditModal(txn)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-blue-500/20 text-blue-500 rounded-lg text-sm">
 
-                      <button onClick={() => handleApprove(txn._id)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-500/20 text-green-500 rounded-lg text-sm">
+                      <Pencil size={14} /> Edit
 
-                        <Check size={14} /> Approve
+                    </button>
 
-                      </button>
+                    {isPending(txn.status) && (
 
-                      <button onClick={() => handleReject(txn._id)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-red-500/20 text-red-500 rounded-lg text-sm">
+                      <>
 
-                        <X size={14} /> Reject
+                        <button onClick={() => handleApprove(txn._id)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-500/20 text-green-500 rounded-lg text-sm">
 
-                      </button>
+                          <Check size={14} /> Approve
 
-                    </div>
+                        </button>
 
-                  )}
+                        <button onClick={() => handleReject(txn._id)} className="flex-1 flex items-center justify-center gap-1 py-2 bg-red-500/20 text-red-500 rounded-lg text-sm">
+
+                          <X size={14} /> Reject
+
+                        </button>
+
+                      </>
+
+                    )}
+
+                  </div>
 
                 </div>
 
@@ -679,6 +813,20 @@ const AdminFundManagement = () => {
                           >
 
                             <Eye size={16} />
+
+                          </button>
+
+                          <button 
+
+                            onClick={() => openEditModal(txn)}
+
+                            className="p-2 hover:bg-dark-600 rounded-lg transition-colors text-gray-400 hover:text-blue-500"
+
+                            title="Edit Transaction"
+
+                          >
+
+                            <Pencil size={16} />
 
                           </button>
 
@@ -1095,6 +1243,156 @@ const AdminFundManagement = () => {
                 </div>
 
               )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+      {/* Edit Transaction Modal */}
+
+      {showEditModal && editTxn && (
+
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+
+          <div className="bg-dark-800 rounded-2xl w-full max-w-md">
+
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+
+              <h2 className="text-xl font-bold text-white">Edit Transaction</h2>
+
+              <button onClick={closeEditModal} className="text-gray-400 hover:text-white">
+
+                <X size={24} />
+
+              </button>
+
+            </div>
+
+            
+
+            <div className="p-6 space-y-4">
+
+              <div>
+
+                <p className="text-gray-500 text-sm mb-1">Transaction ID</p>
+
+                <p className="text-white font-mono text-sm">{editTxn.transactionRef || editTxn._id}</p>
+
+              </div>
+
+              
+
+              <div>
+
+                <p className="text-gray-500 text-sm mb-1">Type</p>
+
+                <p className={`font-medium ${editTxn.type?.toUpperCase() === 'DEPOSIT' ? 'text-green-500' : 'text-red-500'}`}>
+
+                  {editTxn.type}
+
+                </p>
+
+              </div>
+
+              
+
+              <div>
+
+                <label className="text-gray-500 text-sm mb-1 block">Amount ($)</label>
+
+                <input
+
+                  type="number"
+
+                  value={editForm.amount}
+
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+
+                  className="w-full bg-dark-700 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+
+                />
+
+              </div>
+
+              
+
+              {editTxn.type?.toUpperCase() === 'DEPOSIT' && (
+
+                <div>
+
+                  <label className="text-gray-500 text-sm mb-1 block">Bonus Amount ($)</label>
+
+                  <input
+
+                    type="number"
+
+                    value={editForm.bonusAmount}
+
+                    onChange={(e) => setEditForm({ ...editForm, bonusAmount: e.target.value })}
+
+                    className="w-full bg-dark-700 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+
+                  />
+
+                </div>
+
+              )}
+
+              
+
+              <div>
+
+                <label className="text-gray-500 text-sm mb-1 block">Date & Time</label>
+
+                <input
+
+                  type="datetime-local"
+
+                  value={editForm.date}
+
+                  onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+
+                  className="w-full bg-dark-700 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+
+                />
+
+              </div>
+
+              
+
+              <div className="flex gap-3 pt-4">
+
+                <button
+
+                  onClick={closeEditModal}
+
+                  className="flex-1 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+
+                >
+
+                  Cancel
+
+                </button>
+
+                <button
+
+                  onClick={handleEditSubmit}
+
+                  disabled={editLoading}
+
+                  className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center justify-center gap-2"
+
+                >
+
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+
+                </button>
+
+              </div>
 
             </div>
 

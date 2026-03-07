@@ -6,15 +6,19 @@ import {
   Wallet,
   CreditCard,
   RefreshCw,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { API_URL } from '../config/api'
 import { useTheme } from '../context/ThemeContext'
 
 const AdminOverview = () => {
   const { isDarkMode } = useTheme()
+  const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [marginAlerts, setMarginAlerts] = useState({ total: 0, triggered: 0, alerts: [] })
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeToday: 0,
@@ -54,6 +58,20 @@ const AdminOverview = () => {
             pendingKYC: data.stats.pendingKYC || 0,
             pendingWithdrawals: data.stats.pendingWithdrawals || 0,
             activeTrades: data.stats.activeTrades || 0
+          })
+        }
+      }
+
+      // Fetch margin alerts
+      const alertsResponse = await fetch(`${API_URL}/margin-alerts`)
+      if (alertsResponse.ok) {
+        const data = await alertsResponse.json()
+        if (data.success) {
+          const triggered = data.alerts?.filter(a => a.triggered)?.length || 0
+          setMarginAlerts({
+            total: data.alerts?.length || 0,
+            triggered: triggered,
+            alerts: data.alerts || []
           })
         }
       }
@@ -114,6 +132,55 @@ const AdminOverview = () => {
           </div>
         ))}
       </div>
+
+      {/* Margin Alerts Card */}
+      {marginAlerts.total > 0 && (
+        <div 
+          onClick={() => navigate('/admin/margin-alerts')}
+          className={`mb-6 rounded-xl p-4 border cursor-pointer transition-all hover:scale-[1.01] ${
+            marginAlerts.triggered > 0 
+              ? 'bg-red-500/10 border-red-500/50 hover:bg-red-500/20' 
+              : 'bg-yellow-500/10 border-yellow-500/50 hover:bg-yellow-500/20'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                marginAlerts.triggered > 0 ? 'bg-red-500/20' : 'bg-yellow-500/20'
+              }`}>
+                <AlertTriangle size={24} className={marginAlerts.triggered > 0 ? 'text-red-500' : 'text-yellow-500'} />
+              </div>
+              <div>
+                <h3 className={`font-semibold ${marginAlerts.triggered > 0 ? 'text-red-500' : 'text-yellow-500'}`}>
+                  Margin Alerts
+                </h3>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {marginAlerts.triggered > 0 
+                    ? `${marginAlerts.triggered} alert${marginAlerts.triggered > 1 ? 's' : ''} triggered!` 
+                    : `${marginAlerts.total} active alert${marginAlerts.total > 1 ? 's' : ''}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className={`text-2xl font-bold ${marginAlerts.triggered > 0 ? 'text-red-500' : 'text-yellow-500'}`}>
+                  {marginAlerts.triggered > 0 ? marginAlerts.triggered : marginAlerts.total}
+                </p>
+                <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-600'}`}>
+                  {marginAlerts.triggered > 0 ? 'Triggered' : 'Active'}
+                </p>
+              </div>
+              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                marginAlerts.triggered > 0 
+                  ? 'bg-red-500 text-white' 
+                  : 'bg-yellow-500 text-black'
+              }`}>
+                View All →
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1199,49 +1199,70 @@ router.post('/close/:tradeId', async (req, res) => {
 
 
     res.json({    
-
-
-
       success: true, 
-
-
-
       message: 'Trade closed', 
-
-
-
       trade, 
-
-
-
       realizedPnl,
-
-
-
       followersClosed: followerResults.length 
-
-
-
     })
-
-
-
   } catch (error) {
-
-
-
     console.error('Error closing trade:', error)
-
-
-
     res.status(500).json({ success: false, message: error.message })
-
-
-
   }
+})
 
 
+// DELETE /api/admin/trade/delete/:tradeId - Admin delete trade permanently
+router.delete('/delete/:tradeId', async (req, res) => {
+  try {
+    const { tradeId } = req.params
+    
+    const trade = await Trade.findById(tradeId)
+    if (!trade) {
+      return res.status(404).json({ success: false, message: 'Trade not found' })
+    }
 
+    // If trade is OPEN, close it first and update balance
+    if (trade.status === 'OPEN') {
+      const account = await TradingAccount.findById(trade.tradingAccountId)
+      if (account) {
+        // Calculate PnL at open price (no profit/loss since we're deleting)
+        // Just release the margin
+        await account.save()
+      }
+    }
+
+    // Log admin action before deletion (only if adminId is provided)
+    if (req.body.adminId) {
+      await AdminLog.create({
+        adminId: req.body.adminId,
+        action: 'TRADE_DELETE',
+        targetType: 'TRADE',
+        targetId: trade._id,
+        previousValue: {
+          tradeId: trade.tradeId,
+          symbol: trade.symbol,
+          side: trade.side,
+          quantity: trade.quantity,
+          status: trade.status,
+          realizedPnl: trade.realizedPnl
+        },
+        newValue: { deleted: true }
+      })
+    }
+
+    // Delete the trade
+    await Trade.findByIdAndDelete(tradeId)
+
+    res.json({
+      success: true,
+      message: 'Trade deleted permanently',
+      deletedTradeId: trade.tradeId
+    })
+  } catch (error) {
+    console.error('Error deleting trade:', error)
+    res.status(500).json({ success: false, message: error.message })
+  }
 })
 
 

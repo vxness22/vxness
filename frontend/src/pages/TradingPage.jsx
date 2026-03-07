@@ -3136,7 +3136,7 @@ const TradingPage = () => {
 
                         <tr key={trade._id} className={`border-t ${isDarkMode ? 'border-gray-800 hover:bg-[#1a1a1a]' : 'border-gray-200 hover:bg-gray-50'}`}>
 
-                          <td className={`py-2 px-3 text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{new Date(trade.openedAt).toLocaleTimeString()}</td>
+                          <td className={`py-2 px-3 text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{new Date(trade.openedAt || trade.createdAt).toLocaleString()}</td>
 
                           <td className={`py-2 px-3 text-xs font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.symbol}</td>
 
@@ -3406,8 +3406,6 @@ const TradingPage = () => {
 
                     <th className="text-left py-2 px-3 font-normal">P/L</th>
 
-                    <th className="text-left py-2 px-3 font-normal">Closed By</th>
-
                   </tr>
 
                 </thead>
@@ -3418,7 +3416,7 @@ const TradingPage = () => {
 
                     <tr>
 
-                      <td colSpan="10" className="text-center py-8 text-gray-500">No trade history</td>
+                      <td colSpan="9" className="text-center py-8 text-gray-500">No trade history</td>
 
                     </tr>
 
@@ -3467,8 +3465,6 @@ const TradingPage = () => {
                             ${trade.realizedPnl?.toFixed(2) || '0.00'}
 
                           </td>
-
-                          <td className="py-2 px-3 text-xs text-gray-400">{trade.closedBy === 'SL' || trade.closedBy === 'TP' ? trade.closedBy : '-'}</td>
 
                         </tr>
 

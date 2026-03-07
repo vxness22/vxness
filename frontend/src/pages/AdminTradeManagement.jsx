@@ -113,8 +113,8 @@ const AdminTradeManagement = () => {
 
 
   const [showCloseModal, setShowCloseModal] = useState(false)
-
-
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [tradeToDelete, setTradeToDelete] = useState(null)
 
   const [selectedTrade, setSelectedTrade] = useState(null)
 
@@ -1300,17 +1300,67 @@ const AdminTradeManagement = () => {
 
 
 
+  // Open delete confirmation modal
+  const openDeleteModal = (trade) => {
+    setTradeToDelete(trade)
+    setShowDeleteModal(true)
+  }
+
+  // Confirm delete trade - for OPEN trades: close at market price, for CLOSED trades: delete permanently
+  const confirmDeleteTrade = async () => {
+    if (!tradeToDelete) return
+    
+    const trade = tradeToDelete
+    const isOpen = trade.status === 'OPEN'
+
+    try {
+      if (isOpen) {
+        // For OPEN trades: close at market price
+        const priceData = livePrices[trade.symbol]
+        let marketPrice = null
+        if (priceData) {
+          marketPrice = trade.side === 'BUY' ? priceData.bid : priceData.ask
+        }
+
+        const res = await fetch(`${API_URL}/admin/trade/close/${trade._id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ marketPrice })
+        })
+        const data = await res.json()
+        if (data.success) {
+          toast.success(`Trade closed! P&L: $${data.realizedPnl?.toFixed(2)} | Balance updated`)
+          fetchTrades()
+        } else {
+          toast.error(data.message || 'Failed to close trade')
+        }
+      } else {
+        // For CLOSED trades: delete permanently
+        const res = await fetch(`${API_URL}/admin/trade/delete/${trade._id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        const data = await res.json()
+        if (data.success) {
+          toast.success(`Trade ${trade.tradeId} deleted permanently`)
+          fetchTrades()
+        } else {
+          toast.error(data.message || 'Failed to delete trade')
+        }
+      }
+    } catch (error) {
+      toast.error('Error deleting trade')
+    }
+    
+    setShowDeleteModal(false)
+    setTradeToDelete(null)
+  }
+
+
   const openEditModal = (trade) => {
-
-
-
     setSelectedTrade(trade)
 
-
-
     // Format date for datetime-local input - use openedAt field with local timezone
-
-
 
     const dateObj = new Date(trade.openedAt || trade.createdAt || Date.now())
 
@@ -2211,34 +2261,19 @@ const AdminTradeManagement = () => {
 
 
                     {trade.status === 'OPEN' && (
-
-
-
                       <button
-
-
-
                         onClick={() => openCloseModal(trade)}
-
-
-
-                        className="flex-1 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
-
-
-
+                        className="flex-1 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-500 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
                       >
-
-
-
                         <XCircle size={14} /> Close
-
-
-
                       </button>
-
-
-
                     )}
+                    <button
+                      onClick={() => openDeleteModal(trade)}
+                      className="flex-1 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 rounded-lg text-sm font-medium flex items-center justify-center gap-1"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
 
 
 
@@ -2539,53 +2574,24 @@ const AdminTradeManagement = () => {
 
 
                           {trade.status === 'OPEN' && (
-
-
-
                             <button 
-
-
-
                               onClick={() => openCloseModal(trade)}
-
-
-
-                              className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-gray-400 hover:text-red-500" 
-
-
-
+                              className="p-2 hover:bg-orange-500/20 rounded-lg transition-colors text-gray-400 hover:text-orange-500" 
                               title="Close Trade"
-
-
-
                             >
-
-
-
                               <XCircle size={16} />
-
-
-
                             </button>
-
-
-
                           )}
-
-
-
+                          <button 
+                            onClick={() => openDeleteModal(trade)}
+                            className="p-2 hover:bg-red-500/20 rounded-lg transition-colors text-gray-400 hover:text-red-500" 
+                            title={trade.status === 'OPEN' ? "Delete Trade (Close at Market)" : "Delete Trade Permanently"}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-
-
-
                       </td>
-
-
-
                     </tr>
-
-
-
                   ))}
 
 
@@ -4430,7 +4436,74 @@ const AdminTradeManagement = () => {
 
       )}
 
-
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && tradeToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-800 rounded-2xl w-full max-w-md border border-gray-700">
+            <div className="p-6 border-b border-gray-800 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Trash2 className="text-red-500" size={24} />
+                Delete Trade
+              </h2>
+              <button onClick={() => { setShowDeleteModal(false); setTradeToDelete(null) }} className="text-gray-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-300 mb-4">
+                {tradeToDelete.status === 'OPEN' 
+                  ? 'Are you sure you want to DELETE this OPEN trade?' 
+                  : 'Are you sure you want to DELETE this CLOSED trade?'}
+              </p>
+              <div className="bg-dark-700 rounded-lg p-4 space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Trade ID:</span>
+                  <span className="text-white font-mono">{tradeToDelete.tradeId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Symbol:</span>
+                  <span className="text-white font-medium">{tradeToDelete.symbol}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Side:</span>
+                  <span className={tradeToDelete.side === 'BUY' ? 'text-green-500' : 'text-red-500'}>{tradeToDelete.side}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Lots:</span>
+                  <span className="text-white">{tradeToDelete.quantity}</span>
+                </div>
+                {tradeToDelete.status === 'CLOSED' && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">P&L:</span>
+                    <span className={tradeToDelete.realizedPnl >= 0 ? 'text-green-500' : 'text-red-500'}>
+                      ${tradeToDelete.realizedPnl?.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <p className="text-yellow-500 text-sm mb-6">
+                {tradeToDelete.status === 'OPEN' 
+                  ? '⚠️ This will close the position at market price and update the account balance.'
+                  : '⚠️ This will permanently remove the trade from the database.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setTradeToDelete(null) }}
+                  className="flex-1 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteTrade}
+                  className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center gap-2"
+                >
+                  <Trash2 size={16} /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </AdminLayout>
 

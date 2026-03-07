@@ -1096,7 +1096,13 @@ class TradeEngine {
 
       if (!prices) {
 
-        console.log(`[Regular SL/TP] No price data for ${trade.symbol}`)
+        // Only log once per minute to reduce spam
+        if (!this._lastNoDataLog) this._lastNoDataLog = {}
+        const now = Date.now()
+        if (!this._lastNoDataLog[trade.symbol] || now - this._lastNoDataLog[trade.symbol] > 60000) {
+          console.log(`[Regular SL/TP] No price data for ${trade.symbol}`)
+          this._lastNoDataLog[trade.symbol] = now
+        }
 
         continue
 
@@ -1114,24 +1120,19 @@ class TradeEngine {
 
 
 
-      // Only log if SL or TP is actually set (not null)
-
+      // Log when SL or TP is set to help debug
       if (sl || tp) {
-
-        // Minimal logging - only show when close to triggering
-
+        // Check if trigger conditions are met
         const slTrigger = trade.side === 'BUY' ? (sl && bid <= sl) : (sl && ask >= sl)
-
         const tpTrigger = trade.side === 'BUY' ? (tp && bid >= tp) : (tp && ask <= tp)
-
         
-
-        if (slTrigger || tpTrigger) {
-
-          console.log(`[Regular SL/TP] Trade ${trade.tradeId}: ${trade.side} ${trade.symbol} | bid=${bid} ask=${ask} | SL=${sl || 'none'} TP=${tp || 'none'}`)
-
+        // Log every 30 seconds for trades with SL/TP set
+        if (!this._lastSlTpLog) this._lastSlTpLog = {}
+        const now = Date.now()
+        if (!this._lastSlTpLog[trade.tradeId] || now - this._lastSlTpLog[trade.tradeId] > 30000 || slTrigger || tpTrigger) {
+          console.log(`[Regular SL/TP] ${trade.tradeId} ${trade.side} ${trade.symbol} | bid=${bid?.toFixed(2)} ask=${ask?.toFixed(2)} | SL=${sl || '-'} TP=${tp || '-'} | Trigger: ${slTrigger ? 'SL!' : tpTrigger ? 'TP!' : 'none'}`)
+          this._lastSlTpLog[trade.tradeId] = now
         }
-
       }
 
 

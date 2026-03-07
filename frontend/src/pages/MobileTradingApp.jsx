@@ -1924,6 +1924,14 @@ const MobileTradingApp = () => {
 
                           <div>
 
+                            <p className="text-gray-500">Open Time</p>
+
+                            <p className="text-white">{new Date(trade.openedAt || trade.createdAt).toLocaleString()}</p>
+
+                          </div>
+
+                          <div>
+
                             <p className="text-gray-500">Open Price</p>
 
                             <p className="text-white">{trade.openPrice?.toFixed(5)}</p>
@@ -2194,15 +2202,6 @@ const MobileTradingApp = () => {
 
                       </span>
 
-                      {(trade.closedBy === 'SL' || trade.closedBy === 'TP') && (
-
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${trade.closedBy === 'SL' ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>
-
-                          {trade.closedBy}
-
-                        </span>
-
-                      )}
 
                     </div>
 

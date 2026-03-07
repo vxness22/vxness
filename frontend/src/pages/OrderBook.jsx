@@ -392,11 +392,33 @@ const OrderBook = () => {
 
       }
 
+      // Fetch transactions (Deposit, Withdrawal, Credit) - only once per user
+      try {
+        const txnRes = await fetch(`${API_URL}/wallet/transactions/${user._id}`)
+        const txnData = await txnRes.json()
+        if (txnData.transactions) {
+          const transactions = txnData.transactions.map(t => ({
+            ...t,
+            _id: t._id,
+            type: t.type, // DEPOSIT, WITHDRAWAL, CREDIT
+            accountName: t.tradingAccountId?.accountId || '-',
+            amount: t.type === 'WITHDRAWAL' ? -Math.abs(t.amount) : t.amount,
+            createdAt: t.createdAt,
+            closedAt: t.createdAt,
+            openedAt: t.createdAt
+          }))
+          allClosed = [...allClosed, ...transactions]
+        }
+      } catch (e) {
+        // Transactions fetch failed, continue without them
+      }
+
 
 
       setOpenTrades(allOpen)
 
-      setClosedTrades(allClosed.sort((a, b) => new Date(b.closedAt) - new Date(a.closedAt)))
+      // Sort by closedAt or createdAt
+      setClosedTrades(allClosed.sort((a, b) => new Date(b.closedAt || b.createdAt) - new Date(a.closedAt || a.createdAt)))
 
       setPendingOrders(allPending)
 
@@ -480,16 +502,11 @@ const OrderBook = () => {
 
 
 
-    // Sub-tab filter: trades only show actual trades, transactions show commissions/swaps
-
+    // Sub-tab filter: trades only show actual trades, transactions show deposits/withdrawals/credits
     if (historySubTab === 'trades') {
-
       filtered = filtered.filter(t => t.status === 'CLOSED' || t.status === 'STOPPED_OUT' || t.closePrice)
-
     } else if (historySubTab === 'transactions') {
-
-      filtered = filtered.filter(t => t.commission || t.swap)
-
+      filtered = filtered.filter(t => t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL' || t.type === 'CREDIT' || t.type === 'BONUS')
     }
 
 
@@ -1156,6 +1173,8 @@ const OrderBook = () => {
 
                           <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Open Price</th>
 
+                          <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Open Time</th>
+
                           <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Current</th>
 
                           <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">P&L</th>
@@ -1199,6 +1218,15 @@ const OrderBook = () => {
                               <td className={`py-3 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.quantity}</td>
 
                               <td className="py-3 px-4 text-gray-400">{trade.openPrice?.toFixed(5)}</td>
+
+                              <td className="py-3 px-4 text-gray-400 text-xs">
+                                {trade.openedAt || trade.createdAt ? (
+                                  <>
+                                    <div>{new Date(trade.openedAt || trade.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
+                                    <div>{new Date(trade.openedAt || trade.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                  </>
+                                ) : '-'}
+                              </td>
 
                               <td className={`py-3 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{currentPrice?.toFixed(5) || '-'}</td>
 
@@ -1420,7 +1448,7 @@ const OrderBook = () => {
 
                             <tr className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
 
-                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Date</th>
+                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Type</th>
 
                               <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Account</th>
 
@@ -1430,9 +1458,13 @@ const OrderBook = () => {
 
                               <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Qty</th>
 
-                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Open</th>
+                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Open Price</th>
 
-                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Close</th>
+                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Open Time</th>
+
+                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Close Price</th>
+
+                              <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">Close Time</th>
 
                               <th className="text-left text-gray-500 text-xs font-medium py-3 px-4">P&L</th>
 
@@ -1446,34 +1478,56 @@ const OrderBook = () => {
 
                               <tr key={trade._id} className={`border-b ${isDarkMode ? 'border-gray-800 hover:bg-dark-700/50' : 'border-gray-200 hover:bg-gray-50'}`}>
 
-                                <td className="py-3 px-4 text-gray-400 text-xs">{formatDate(trade.closedAt)}</td>
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                    trade.type === 'DEPOSIT' ? 'bg-green-500/20 text-green-500' :
+                                    trade.type === 'WITHDRAWAL' ? 'bg-orange-500/20 text-orange-500' :
+                                    trade.type === 'CREDIT' ? 'bg-purple-500/20 text-purple-500' :
+                                    'bg-blue-500/20 text-blue-500'
+                                  }`}>
+                                    {trade.type || 'Trade'}
+                                  </span>
+                                </td>
 
                                 <td className="py-3 px-4 text-gray-400 text-sm">{trade.accountName}</td>
 
-                                <td className={`py-3 px-4 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.symbol}</td>
+                                <td className={`py-3 px-4 font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.symbol || '-'}</td>
 
                                 <td className="py-3 px-4">
-
-                                  <span className={`flex items-center gap-1 ${trade.side === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
-
-                                    {trade.side === 'BUY' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-
-                                    {trade.side}
-
-                                  </span>
-
+                                  {trade.side ? (
+                                    <span className={`flex items-center gap-1 ${trade.side === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
+                                      {trade.side === 'BUY' ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                      {trade.side}
+                                    </span>
+                                  ) : '-'}
                                 </td>
 
-                                <td className={`py-3 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.quantity}</td>
+                                <td className={`py-3 px-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{trade.quantity || '-'}</td>
 
-                                <td className="py-3 px-4 text-gray-400">{trade.openPrice?.toFixed(5)}</td>
+                                <td className="py-3 px-4 text-gray-400">{trade.openPrice?.toFixed(5) || '-'}</td>
 
-                                <td className="py-3 px-4 text-gray-400">{trade.closePrice?.toFixed(5)}</td>
+                                <td className="py-3 px-4 text-gray-400 text-xs">
+                                  {trade.openedAt || trade.createdAt ? (
+                                    <>
+                                      <div>{new Date(trade.openedAt || trade.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
+                                      <div>{new Date(trade.openedAt || trade.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </>
+                                  ) : '-'}
+                                </td>
 
-                                <td className={`py-3 px-4 font-medium ${(trade.realizedPnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <td className="py-3 px-4 text-gray-400">{trade.closePrice?.toFixed(5) || '-'}</td>
 
-                                  {(trade.realizedPnl || 0) >= 0 ? '+' : ''}${(trade.realizedPnl || 0).toFixed(2)}
+                                <td className="py-3 px-4 text-gray-400 text-xs">
+                                  {trade.closedAt ? (
+                                    <>
+                                      <div>{new Date(trade.closedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</div>
+                                      <div>{new Date(trade.closedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                    </>
+                                  ) : '-'}
+                                </td>
 
+                                <td className={`py-3 px-4 font-medium ${(trade.realizedPnl || trade.amount || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {(trade.realizedPnl || trade.amount || 0) >= 0 ? '+' : ''}${(trade.realizedPnl || trade.amount || 0).toFixed(2)}
                                 </td>
 
                               </tr>

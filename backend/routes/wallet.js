@@ -1256,6 +1256,60 @@ router.delete('/transaction/:id', async (req, res) => {
 
 
 
+// PUT /api/wallet/transaction/:id/edit - Edit transaction amount and bonus
+
+router.put('/transaction/:id/edit', async (req, res) => {
+
+  try {
+
+    const { amount, bonusAmount } = req.body
+
+    
+
+    const transaction = await Transaction.findById(req.params.id)
+
+    if (!transaction) {
+
+      return res.status(404).json({ message: 'Transaction not found' })
+
+    }
+
+    
+
+    // Update fields
+
+    if (amount !== undefined) {
+
+      transaction.amount = amount
+
+    }
+
+    if (bonusAmount !== undefined) {
+
+      transaction.bonusAmount = bonusAmount
+
+      transaction.totalAmount = (amount || transaction.amount) + bonusAmount
+
+    }
+
+    
+
+    await transaction.save()
+
+    
+
+    res.json({ message: 'Transaction updated', transaction })
+
+  } catch (error) {
+
+    res.status(500).json({ message: 'Error updating transaction', error: error.message })
+
+  }
+
+})
+
+
+
 // PUT /api/wallet/transaction/:id/date - Update transaction date
 
 router.put('/transaction/:id/date', async (req, res) => {
