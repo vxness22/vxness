@@ -420,59 +420,59 @@ const AdminFundManagement = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
-        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800">
+        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800 overflow-hidden">
 
           <div className="flex items-center gap-2 mb-2">
 
-            <ArrowDownRight size={18} className="text-green-500" />
+            <ArrowDownRight size={18} className="text-green-500 flex-shrink-0" />
 
             <p className="text-gray-500 text-sm">Total Deposits</p>
 
           </div>
 
-          <p className="text-white text-2xl font-bold">${stats.deposits.toLocaleString()}</p>
+          <p className="text-white text-xl lg:text-2xl font-bold truncate" title={`$${stats.deposits.toLocaleString()}`}>${stats.deposits.toLocaleString()}</p>
 
         </div>
 
-        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800">
+        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800 overflow-hidden">
 
           <div className="flex items-center gap-2 mb-2">
 
-            <ArrowUpRight size={18} className="text-red-500" />
+            <ArrowUpRight size={18} className="text-red-500 flex-shrink-0" />
 
             <p className="text-gray-500 text-sm">Total Withdrawals</p>
 
           </div>
 
-          <p className="text-white text-2xl font-bold">${stats.withdrawals.toLocaleString()}</p>
+          <p className="text-white text-xl lg:text-2xl font-bold truncate" title={`$${stats.withdrawals.toLocaleString()}`}>${stats.withdrawals.toLocaleString()}</p>
 
         </div>
 
-        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800">
+        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800 overflow-hidden">
 
           <div className="flex items-center gap-2 mb-2">
 
-            <Clock size={18} className="text-yellow-500" />
+            <Clock size={18} className="text-yellow-500 flex-shrink-0" />
 
             <p className="text-gray-500 text-sm">Pending Requests</p>
 
           </div>
 
-          <p className="text-white text-2xl font-bold">{stats.pending}</p>
+          <p className="text-white text-xl lg:text-2xl font-bold truncate">{stats.pending}</p>
 
         </div>
 
-        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800">
+        <div className="bg-dark-800 rounded-xl p-5 border border-gray-800 overflow-hidden">
 
           <div className="flex items-center gap-2 mb-2">
 
-            <Wallet size={18} className="text-purple-500" />
+            <Wallet size={18} className="text-purple-500 flex-shrink-0" />
 
             <p className="text-gray-500 text-sm">Net Balance</p>
 
           </div>
 
-          <p className="text-white text-2xl font-bold">${stats.net.toLocaleString()}</p>
+          <p className="text-white text-xl lg:text-2xl font-bold truncate" title={`$${stats.net.toLocaleString()}`}>${stats.net.toLocaleString()}</p>
 
         </div>
 
