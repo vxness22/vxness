@@ -57,6 +57,8 @@ const MobileTradingApp = () => {
   const [pendingOrders, setPendingOrders] = useState([])
 
   const [tradeHistory, setTradeHistory] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [historySubTab, setHistorySubTab] = useState('all') // all, trades, transactions
 
   const [instruments, setInstruments] = useState([])
 
@@ -245,6 +247,8 @@ const MobileTradingApp = () => {
       fetchPendingOrders()
 
       fetchTradeHistory()
+
+      fetchTransactions()
 
       fetchAccountSummary()
 
@@ -581,19 +585,29 @@ const MobileTradingApp = () => {
 
 
   const fetchTradeHistory = async () => {
-
     if (!selectedAccount) return
-
     try {
-
       const res = await fetch(`${API_URL}/trade/history/${selectedAccount._id}?limit=50`)
-
       const data = await res.json()
-
       if (data.success) setTradeHistory(data.trades || [])
-
     } catch (e) {}
+  }
 
+  const fetchTransactions = async () => {
+    if (!user) return
+    try {
+      const res = await fetch(`${API_URL}/wallet/transactions/${user._id}`)
+      const data = await res.json()
+      if (data.success) {
+        // Filter transactions for selected account if needed
+        const txns = (data.transactions || []).map(t => ({
+          ...t,
+          isTransaction: true,
+          accountName: t.tradingAccountId?.accountId || '-'
+        }))
+        setTransactions(txns)
+      }
+    } catch (e) {}
   }
 
 
@@ -2174,95 +2188,124 @@ const MobileTradingApp = () => {
 
 
         {tradeTab === 'history' && (
-
-          tradeHistory.length === 0 ? (
-
-            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-
-              <FileText size={48} className="mb-2 opacity-50" />
-
-              <p>No trade history</p>
-
-            </div>
-
-          ) : (
-
-            <div className="divide-y divide-gray-800">
-
-              {tradeHistory.map(trade => (
-
-                <div key={trade._id} className="p-3 bg-dark-800/50">
-
-                  {/* Row 1: Type, Symbol, Side, P&L */}
-                  <div className="flex items-center justify-between mb-2">
-
-                    <div className="flex items-center gap-2">
-
-                      <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] rounded">Trade</span>
-
-                      <span className="text-white font-medium text-sm">{trade.symbol}</span>
-
-                      <span className={`flex items-center gap-0.5 text-xs ${trade.side === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
-                        {trade.side === 'BUY' ? '↗' : '↘'} {trade.side}
-                      </span>
-
-                    </div>
-
-                    <span className={`font-semibold ${trade.realizedPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-
-                      {trade.realizedPnl >= 0 ? '+' : ''}${trade.realizedPnl?.toFixed(2)}
-
-                    </span>
-
-                  </div>
-
-                  {/* Row 2: Account, Qty */}
-                  <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-
-                    <span>Account: {trade.tradingAccountId?.accountNumber || trade.accountNumber || '-'}</span>
-
-                    <span>Qty: {trade.quantity} lots</span>
-
-                  </div>
-
-                  {/* Row 3: Open Price & Time */}
-                  <div className="flex items-center justify-between text-xs mb-1">
-
-                    <span className="text-gray-500">Open Price</span>
-
-                    <span className="text-gray-300">{trade.openPrice?.toFixed(5) || '-'}</span>
-
-                    <span className="text-gray-500">Open Time</span>
-
-                    <span className="text-gray-300 text-[10px]">
-                      {trade.openedAt ? new Date(trade.openedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + new Date(trade.openedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                    </span>
-
-                  </div>
-
-                  {/* Row 4: Close Price & Time */}
-                  <div className="flex items-center justify-between text-xs">
-
-                    <span className="text-gray-500">Close Price</span>
-
-                    <span className="text-gray-300">{trade.closePrice?.toFixed(5) || '-'}</span>
-
-                    <span className="text-gray-500">Close Time</span>
-
-                    <span className="text-gray-300 text-[10px]">
-                      {trade.closedAt ? new Date(trade.closedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + new Date(trade.closedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                    </span>
-
-                  </div>
-
-                </div>
-
+          <>
+            {/* History Sub-tabs: All, Trades, Transactions */}
+            <div className="flex gap-2 p-2 bg-dark-900 border-b border-gray-800">
+              {[
+                { key: 'all', label: 'All' },
+                { key: 'trades', label: 'Trades' },
+                { key: 'transactions', label: 'Transactions' }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setHistorySubTab(tab.key)}
+                  className={`flex-1 px-2 py-1.5 rounded text-xs font-medium ${
+                    historySubTab === tab.key 
+                      ? 'bg-accent-green text-black' 
+                      : 'bg-dark-700 text-gray-400'
+                  }`}
+                >
+                  {tab.label}
+                </button>
               ))}
-
             </div>
 
-          )
+            {(() => {
+              // Combine and filter history based on sub-tab
+              let combinedHistory = []
+              if (historySubTab === 'all' || historySubTab === 'trades') {
+                combinedHistory = [...combinedHistory, ...tradeHistory.map(t => ({ ...t, itemType: 'trade' }))]
+              }
+              if (historySubTab === 'all' || historySubTab === 'transactions') {
+                combinedHistory = [...combinedHistory, ...transactions.map(t => ({ ...t, itemType: 'transaction' }))]
+              }
+              // Sort by date descending
+              combinedHistory.sort((a, b) => new Date(b.closedAt || b.createdAt) - new Date(a.closedAt || a.createdAt))
 
+              if (combinedHistory.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-500 py-8">
+                    <FileText size={48} className="mb-2 opacity-50" />
+                    <p>No {historySubTab === 'trades' ? 'trade' : historySubTab === 'transactions' ? 'transaction' : ''} history</p>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="divide-y divide-gray-800">
+                  {combinedHistory.map((item, idx) => (
+                    item.itemType === 'transaction' ? (
+                      // Transaction Card (Deposit, Withdrawal, Credit)
+                      <div key={item._id || idx} className="p-3 bg-dark-800/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-1.5 py-0.5 text-[10px] rounded ${
+                              item.type === 'DEPOSIT' ? 'bg-green-500/20 text-green-400' :
+                              item.type === 'WITHDRAWAL' ? 'bg-red-500/20 text-red-400' :
+                              item.type === 'CREDIT' ? 'bg-purple-500/20 text-purple-400' :
+                              'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              {item.type}
+                            </span>
+                            <span className="text-white font-medium text-sm">{item.accountName || '-'}</span>
+                          </div>
+                          <span className={`font-semibold ${
+                            item.type === 'WITHDRAWAL' ? 'text-red-500' : 'text-green-500'
+                          }`}>
+                            {item.type === 'WITHDRAWAL' ? '-' : '+'}${Math.abs(item.amount || 0).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span>Status: <span className={item.status === 'APPROVED' || item.status === 'COMPLETED' ? 'text-green-400' : item.status === 'REJECTED' ? 'text-red-400' : 'text-yellow-400'}>{item.status}</span></span>
+                          <span>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + new Date(item.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      // Trade Card
+                      <div key={item._id} className="p-3 bg-dark-800/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] rounded">Trade</span>
+                            <span className="text-white font-medium text-sm">{item.symbol}</span>
+                            <span className={`flex items-center gap-0.5 text-xs ${item.side === 'BUY' ? 'text-green-500' : 'text-red-500'}`}>
+                              {item.side === 'BUY' ? '↗' : '↘'} {item.side}
+                            </span>
+                          </div>
+                          <span className={`font-semibold ${item.realizedPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {item.realizedPnl >= 0 ? '+' : ''}${item.realizedPnl?.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+                          <span>Account: {item.tradingAccountId?.accountNumber || item.accountNumber || '-'}</span>
+                          <span>Qty: {item.quantity} lots</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs mb-1">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Open Price</span>
+                            <span className="text-gray-300">{item.openPrice?.toFixed(5) || '-'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Open Time</span>
+                            <span className="text-gray-300">{item.openedAt ? new Date(item.openedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + new Date(item.openedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Close Price</span>
+                            <span className="text-gray-300">{item.closePrice?.toFixed(5) || '-'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Close Time</span>
+                            <span className="text-gray-300">{item.closedAt ? new Date(item.closedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ' ' + new Date(item.closedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ))}
+                </div>
+              )
+            })()}
+          </>
         )}
 
       </div>

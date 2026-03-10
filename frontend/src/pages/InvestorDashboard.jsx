@@ -117,39 +117,39 @@ const InvestorDashboard = () => {
   return (
     <div className="min-h-screen bg-dark-900">
       {/* Header */}
-      <header className="bg-dark-800 border-b border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <TrendingUp size={32} className="text-green-500" />
+      <header className="bg-dark-800 border-b border-gray-700 px-4 md:px-6 py-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <TrendingUp size={28} className="text-green-500" />
             <div>
-              <h1 className="text-xl font-bold text-white">Account: {account.accountId}</h1>
-              <p className="text-gray-400 text-sm">{account.user?.firstName} {account.user?.lastName}</p>
+              <h1 className="text-lg md:text-xl font-bold text-white">Account: {account.accountId}</h1>
+              <p className="text-gray-400 text-xs md:text-sm">{account.user?.firstName} {account.user?.lastName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Access Type Badge */}
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+            <div className={`flex items-center gap-1 md:gap-2 px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm ${
               accessType === 'investor' 
                 ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                 : 'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}>
-              {accessType === 'investor' ? <Eye size={18} /> : <Lock size={18} />}
+              {accessType === 'investor' ? <Eye size={16} /> : <Lock size={16} />}
               <span className="font-medium">
-                {accessType === 'investor' ? 'Investor (Read-Only)' : 'Master (Full Access)'}
+                {accessType === 'investor' ? 'Read-Only' : 'Full Access'}
               </span>
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors"
+              className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-gray-400 hover:text-white transition-colors text-sm"
             >
-              <LogOut size={18} />
-              Logout
+              <LogOut size={16} />
+              <span className="hidden md:inline">Logout</span>
             </button>
           </div>
         </div>
       </header>
 
-      <main className="p-6">
+      <main className="p-4 md:p-6">
         {/* Read-Only Notice for Investor */}
         {accessType === 'investor' && (
           <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
@@ -201,10 +201,12 @@ const InvestorDashboard = () => {
 
         {/* Open Trades */}
         <div className="bg-dark-800 rounded-xl border border-gray-700 mb-8">
-          <div className="p-6 border-b border-gray-700">
+          <div className="p-4 md:p-6 border-b border-gray-700">
             <h2 className="text-lg font-semibold text-white">Open Trades ({openTrades.length})</h2>
           </div>
-          <div className="overflow-x-auto">
+          
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-700">
@@ -247,14 +249,61 @@ const InvestorDashboard = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden p-3 space-y-3">
+            {openTrades.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">No open trades</div>
+            ) : (
+              openTrades.map((trade) => {
+                const pnl = calculateFloatingPnl(trade)
+                const currentPrice = livePrices[trade.symbol]?.bid || trade.openPrice
+                return (
+                  <div key={trade._id} className="bg-dark-700 rounded-lg p-4 border border-gray-600">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-semibold">{trade.symbol}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          trade.side === 'BUY' 
+                            ? 'bg-green-500/20 text-green-400' 
+                            : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          {trade.side}
+                        </span>
+                      </div>
+                      <span className={`font-bold ${pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <span className="text-gray-500">Lots:</span>
+                        <span className="text-white ml-2">{trade.quantity}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Open:</span>
+                        <span className="text-gray-300 ml-2">${trade.openPrice?.toFixed(5)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Current:</span>
+                        <span className="text-gray-300 ml-2">${currentPrice?.toFixed(5)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
 
         {/* Trade History */}
         <div className="bg-dark-800 rounded-xl border border-gray-700">
-          <div className="p-6 border-b border-gray-700">
+          <div className="p-4 md:p-6 border-b border-gray-700">
             <h2 className="text-lg font-semibold text-white">Trade History ({closedTrades.length})</h2>
           </div>
-          <div className="overflow-x-auto">
+          
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-700">
@@ -301,6 +350,58 @@ const InvestorDashboard = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden p-3 space-y-3">
+            {closedTrades.length === 0 ? (
+              <div className="py-8 text-center text-gray-500">No trade history</div>
+            ) : (
+              closedTrades.slice(0, 20).map((trade) => (
+                <div key={trade._id} className="bg-dark-700 rounded-lg p-4 border border-gray-600">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-semibold">{trade.symbol}</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        trade.side === 'BUY' 
+                          ? 'bg-green-500/20 text-green-400' 
+                          : 'bg-red-500/20 text-red-400'
+                      }`}>
+                        {trade.side}
+                      </span>
+                    </div>
+                    <span className={`font-bold ${(trade.realizedPnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {(trade.realizedPnl || 0) >= 0 ? '+' : ''}${(trade.realizedPnl || 0).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-gray-500">Lots:</span>
+                      <span className="text-white ml-2">{trade.quantity}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Open:</span>
+                      <span className="text-gray-300 ml-2">${trade.openPrice?.toFixed(5)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Close:</span>
+                      <span className="text-gray-300 ml-2">${trade.closePrice?.toFixed(5)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Time:</span>
+                      <span className="text-gray-300 ml-2">
+                        {trade.closedAt ? new Date(trade.closedAt).toLocaleString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }) : '-'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </main>
