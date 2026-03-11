@@ -21,6 +21,10 @@ jobs:
         working-directory: ./frontend
         run: npm install
 
+      - name: Install website dependencies
+        working-directory: ./frontend/src/website
+        run: npm install
+
       - name: Build frontend
         working-directory: ./frontend
         env:
