@@ -3,8 +3,13 @@ export default {
   darkMode: ['class'],
   content: [
     "./index.html",
-    "./src/**/*.{js,jsx}",
+    "./src/api/**/*.{js,jsx}",
+    "./src/assets/**/*.{js,jsx}",
+    "./src/components/**/*.{js,jsx}",
+    "./src/pages/**/*.{js,jsx}",
+    "./src/*.{js,jsx}",
     "./src/website/src/**/*.{js,jsx}",
+    "!./src/website/node_modules/**",
   ],
   theme: {
     screens: {
