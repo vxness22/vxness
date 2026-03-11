@@ -43,18 +43,47 @@ import AdminEmailTemplates from './pages/AdminEmailTemplates'
 import AdminBonusManagement from './pages/AdminBonusManagement'
 import AdminCreditRequests from './pages/AdminCreditRequests'
 import AdminTechnicalAnalysis from './pages/AdminTechnicalAnalysis'
-import LandingPage from './pages/LandingPage'
 import InvestorLogin from './pages/InvestorLogin'
 import InvestorDashboard from './pages/InvestorDashboard'
 import AdminInvestorAccess from './pages/AdminInvestorAccess'
 import AdminMarginAlerts from './pages/AdminMarginAlerts'
+
+// Website pages
+import WebsiteHome from './website/src/pages/Home'
+import WebsiteAbout from './website/src/pages/about/About'
+import WebsitePropFirm from './website/src/pages/prop-firm/Prop-firm'
+import WebsitePartnership from './website/src/pages/partnership/Partnership'
+import WebsiteContact from './website/src/pages/contact/Contact'
+import WebsiteBlog from './website/src/pages/blog/Blog'
+import WebsiteLegal from './website/src/pages/legal/Legal'
+import WebsiteForexMarket from './website/src/pages/markets/forex/Forex'
+import WebsiteIndicesMarket from './website/src/pages/markets/indices/Indices'
+import WebsiteCommoditiesMarket from './website/src/pages/markets/commodities/Commodities'
+import WebsiteMetalsMarket from './website/src/pages/markets/metals/Metals'
+import WebsiteCfdsMarket from './website/src/pages/markets/cfds/Cfds'
+import WebsiteAccountTypes from './website/src/pages/accounts/types/Types'
+import WebsiteDepositsWithdrawals from './website/src/pages/accounts/deposits-withdrawals/Deposits-withdrawals'
 
 function App() {
   return (
     <InvestorProvider>
       <Router>
         <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {/* Website Routes */}
+        <Route path="/" element={<WebsiteHome />} />
+        <Route path="/about" element={<WebsiteAbout />} />
+        <Route path="/prop-firm" element={<WebsitePropFirm />} />
+        <Route path="/partnership" element={<WebsitePartnership />} />
+        <Route path="/contact" element={<WebsiteContact />} />
+        <Route path="/blog" element={<WebsiteBlog />} />
+        <Route path="/legal/*" element={<WebsiteLegal />} />
+        <Route path="/markets/forex" element={<WebsiteForexMarket />} />
+        <Route path="/markets/indices" element={<WebsiteIndicesMarket />} />
+        <Route path="/markets/commodities" element={<WebsiteCommoditiesMarket />} />
+        <Route path="/markets/metals" element={<WebsiteMetalsMarket />} />
+        <Route path="/markets/cfds" element={<WebsiteCfdsMarket />} />
+        <Route path="/accounts/types" element={<WebsiteAccountTypes />} />
+        <Route path="/accounts/deposits-withdrawals" element={<WebsiteDepositsWithdrawals />} />
         <Route path="/login" element={<Navigate to="/user/login" replace />} />
         <Route path="/signup" element={<Navigate to="/user/signup" replace />} />
         <Route path="/user/signup" element={<Signup />} />
