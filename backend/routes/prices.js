@@ -135,6 +135,10 @@ function getInstrumentName(symbol) {
     'USDHUF': 'USD/HUF', 'EURHUF': 'EUR/HUF', 'USDCZK': 'USD/CZK', 'EURCZK': 'EUR/CZK',
     // Metals
     'XAUUSD': 'Gold', 'XAGUSD': 'Silver', 'XPTUSD': 'Platinum', 'XPDUSD': 'Palladium',
+    'XAUEUR': 'Gold/EUR', 'XAUGBP': 'Gold/GBP', 'XAUAUD': 'Gold/AUD', 'XAUCHF': 'Gold/CHF',
+    'XAUJPY': 'Gold/JPY', 'XAUCAD': 'Gold/CAD', 'XAUNZD': 'Gold/NZD',
+    'XAGEUR': 'Silver/EUR', 'XAGGBP': 'Silver/GBP', 'XAGAUD': 'Silver/AUD', 'XAGCHF': 'Silver/CHF',
+    'XAGJPY': 'Silver/JPY', 'XAGCAD': 'Silver/CAD', 'XAGNZD': 'Silver/NZD',
     // Commodities
     'USOIL': 'US Oil', 'UKOIL': 'UK Oil', 'NGAS': 'Natural Gas', 'COPPER': 'Copper',
     'ALUMINUM': 'Aluminum', 'NICKEL': 'Nickel',
