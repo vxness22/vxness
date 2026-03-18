@@ -44,7 +44,6 @@ const createAdmin = async () => {
       process.exit(1)
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(adminData.password, 10)
 
     // Create admin
