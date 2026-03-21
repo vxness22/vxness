@@ -29,7 +29,7 @@ async function getInfowayPrice(symbol) {
   }
 }
 
-// Helper function to categorize symbols
+// Helper function to categorize symbols (must align with Charges.segment: Forex, Metals, Crypto, Indices, Commodities)
 function categorizeSymbol(symbol) {
   if (!symbol) return 'Forex'
   const s = symbol.toUpperCase()
@@ -42,6 +42,8 @@ function categorizeSymbol(symbol) {
   if (infowayService.isCrypto(symbol)) {
     return 'Crypto'
   }
+  const indexSymbols = ['US30', 'US500', 'NAS100', 'SPX500', 'GER40', 'UK100', 'USTEC', 'DE30', 'DJ30', 'US100']
+  if (indexSymbols.includes(s)) return 'Indices'
   return 'Forex'
 }
 

@@ -76,7 +76,7 @@ const AdminForexCharges = () => {
   const fetchCharges = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/charges?segment=Forex`)
+      const res = await fetch(`${API_URL}/charges`)
       const data = await res.json()
       if (data.success) {
         setCharges(data.charges || [])
@@ -87,6 +87,14 @@ const AdminForexCharges = () => {
     setLoading(false)
   }
 
+  const deriveChargeLevel = (f) => {
+    if (f.userId) return 'USER'
+    if (f.instrumentSymbol) return 'INSTRUMENT'
+    if (f.accountTypeId) return 'ACCOUNT_TYPE'
+    if (f.segment) return 'SEGMENT'
+    return 'GLOBAL'
+  }
+
   const handleSave = async () => {
     try {
       const url = editingCharge 
@@ -94,10 +102,12 @@ const AdminForexCharges = () => {
         : `${API_URL}/charges`
       const method = editingCharge ? 'PUT' : 'POST'
 
+      const payload = { ...form, level: deriveChargeLevel(form) }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (data.success) {
@@ -372,7 +382,13 @@ const AdminForexCharges = () => {
               {/* Step 1: Account Type */}
               <div>
                 <label className="block text-gray-400 text-xs mb-1">1. Account Type <span className="text-gray-600">(optional)</span></label>
-                <select value={form.accountTypeId} onChange={(e) => setForm({ ...form, accountTypeId: e.target.value, level: e.target.value ? 'ACCOUNT_TYPE' : 'GLOBAL' })} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                <select value={form.accountTypeId} onChange={(e) => {
+                  const accountTypeId = e.target.value
+                  const level = accountTypeId
+                    ? 'ACCOUNT_TYPE'
+                    : (form.instrumentSymbol ? 'INSTRUMENT' : (form.segment ? 'SEGMENT' : 'GLOBAL'))
+                  setForm({ ...form, accountTypeId, level })
+                }} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
                   <option value="">All Account Types (Global)</option>
                   {accountTypes.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
                 </select>
@@ -381,7 +397,13 @@ const AdminForexCharges = () => {
               {/* Step 2: Segment */}
               <div>
                 <label className="block text-gray-400 text-xs mb-1">2. Segment <span className="text-gray-600">(optional)</span></label>
-                <select value={form.segment} onChange={(e) => setForm({ ...form, segment: e.target.value, level: form.accountTypeId ? 'ACCOUNT_TYPE' : (e.target.value ? 'SEGMENT' : form.level) })} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                <select value={form.segment} onChange={(e) => {
+                  const segment = e.target.value
+                  const level = form.accountTypeId
+                    ? 'ACCOUNT_TYPE'
+                    : (segment ? 'SEGMENT' : (form.instrumentSymbol ? 'INSTRUMENT' : 'GLOBAL'))
+                  setForm({ ...form, segment, level })
+                }} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
                   <option value="">All Segments</option>
                   <option value="Forex">Forex</option>
                   <option value="Metals">Metals</option>
@@ -543,7 +565,13 @@ const AdminForexCharges = () => {
               {/* Step 1: Account Type */}
               <div>
                 <label className="block text-gray-400 text-xs mb-1">1. Account Type <span className="text-gray-600">(optional)</span></label>
-                <select value={form.accountTypeId} onChange={(e) => setForm({ ...form, accountTypeId: e.target.value, level: e.target.value ? 'ACCOUNT_TYPE' : 'GLOBAL' })} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                <select value={form.accountTypeId} onChange={(e) => {
+                  const accountTypeId = e.target.value
+                  const level = accountTypeId
+                    ? 'ACCOUNT_TYPE'
+                    : (form.instrumentSymbol ? 'INSTRUMENT' : (form.segment ? 'SEGMENT' : 'GLOBAL'))
+                  setForm({ ...form, accountTypeId, level })
+                }} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
                   <option value="">All Account Types (Global)</option>
                   {accountTypes.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
                 </select>
@@ -616,7 +644,7 @@ const AdminForexCharges = () => {
                         <p className="text-gray-500 text-xs">{selectedUser.email}</p>
                       </div>
                     </div>
-                    <button onClick={() => { setSelectedUser(null); setForm({ ...form, userId: '', level: form.instrumentSymbol ? 'INSTRUMENT' : form.accountTypeId ? 'ACCOUNT_TYPE' : 'GLOBAL' }) }} className="text-gray-400 hover:text-white"><X size={16} /></button>
+                    <button onClick={() => { setSelectedUser(null); setForm({ ...form, userId: '', level: form.instrumentSymbol ? 'INSTRUMENT' : form.accountTypeId ? 'ACCOUNT_TYPE' : (form.segment ? 'SEGMENT' : 'GLOBAL') }) }} className="text-gray-400 hover:text-white"><X size={16} /></button>
                   </div>
                 ) : (
                   <div className="relative">
@@ -694,7 +722,13 @@ const AdminForexCharges = () => {
               {/* Step 1: Account Type */}
               <div>
                 <label className="block text-gray-400 text-xs mb-1">1. Account Type <span className="text-gray-600">(optional)</span></label>
-                <select value={form.accountTypeId} onChange={(e) => setForm({ ...form, accountTypeId: e.target.value, level: e.target.value ? 'ACCOUNT_TYPE' : 'GLOBAL' })} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
+                <select value={form.accountTypeId} onChange={(e) => {
+                  const accountTypeId = e.target.value
+                  const level = accountTypeId
+                    ? 'ACCOUNT_TYPE'
+                    : (form.instrumentSymbol ? 'INSTRUMENT' : (form.segment ? 'SEGMENT' : 'GLOBAL'))
+                  setForm({ ...form, accountTypeId, level })
+                }} className="w-full px-3 py-2 bg-dark-700 border border-gray-600 rounded-lg text-white text-sm">
                   <option value="">All Account Types (Global)</option>
                   {accountTypes.map(acc => <option key={acc._id} value={acc._id}>{acc.name}</option>)}
                 </select>
@@ -767,7 +801,7 @@ const AdminForexCharges = () => {
                         <p className="text-gray-500 text-xs">{selectedUser.email}</p>
                       </div>
                     </div>
-                    <button onClick={() => { setSelectedUser(null); setForm({ ...form, userId: '', level: form.instrumentSymbol ? 'INSTRUMENT' : form.accountTypeId ? 'ACCOUNT_TYPE' : 'GLOBAL' }) }} className="text-gray-400 hover:text-white"><X size={16} /></button>
+                    <button onClick={() => { setSelectedUser(null); setForm({ ...form, userId: '', level: form.instrumentSymbol ? 'INSTRUMENT' : form.accountTypeId ? 'ACCOUNT_TYPE' : (form.segment ? 'SEGMENT' : 'GLOBAL') }) }} className="text-gray-400 hover:text-white"><X size={16} /></button>
                   </div>
                 ) : (
                   <div className="relative">

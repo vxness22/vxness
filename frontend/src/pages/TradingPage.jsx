@@ -948,14 +948,25 @@ const TradingPage = () => {
 
 
 
-  const getSymbolCategory = (symbol) => {
+  const SEGMENT_ORDER = ['Forex', 'Metals', 'Crypto', 'Indices', 'Commodities']
 
-    if (['XAUUSD', 'XAGUSD', 'XPTUSD', 'XPDUSD'].includes(symbol)) return 'Metals'
+  const getSymbolCategory = (symbol, instrument = null) => {
+    const cat = instrument?.category
+    if (cat && SEGMENT_ORDER.includes(cat)) return cat
 
-    if (['BTCUSD', 'ETHUSD', 'LTCUSD', 'XRPUSD', 'BCHUSD'].includes(symbol)) return 'Crypto'
-
+    const s = (symbol || '').toUpperCase()
+    if (s.includes('XAU') || s.includes('XAG') || s.includes('XPT') || s.includes('XPD')) return 'Metals'
+    if (s.includes('US30') || s.includes('US500') || s.includes('NAS100') || s.includes('SPX') || s.includes('NDX') ||
+        s.includes('US100') || s.includes('GER40') || s.includes('UK100') || s.includes('DJ30') || s.includes('DAX') || s.includes('FTSE')) {
+      return 'Indices'
+    }
+    if (s.includes('OIL') || s.includes('BRENT') || s.includes('WTI') || s === 'NGAS' || s === 'COPPER') return 'Commodities'
+    if (s.endsWith('USD') && s.length >= 6 && !/^(EUR|GBP|AUD|NZD|CAD|CHF|USD)(USD|JPY|CHF|CAD|AUD|NZD|GBP|EUR)/.test(s) && s !== 'USDCAD' && s !== 'USDCHF' && s !== 'USDJPY') {
+      const base = s.replace('USD', '')
+      const fiat = ['EUR', 'GBP', 'AUD', 'NZD', 'CAD', 'CHF', 'JPY', 'SGD', 'HKD', 'ZAR', 'MXN', 'TRY', 'PLN', 'SEK', 'NOK', 'DKK', 'CNH', 'HUF', 'CZK']
+      if (base.length >= 3 && !fiat.includes(base.slice(0, 3)) && base.length <= 12) return 'Crypto'
+    }
     return 'Forex'
-
   }
 
 
@@ -1292,7 +1303,7 @@ const TradingPage = () => {
 
     try {
 
-      const segment = getSymbolCategory(selectedInstrument.symbol)
+      const segment = getSymbolCategory(selectedInstrument.symbol, selectedInstrument)
 
       
 
@@ -1462,7 +1473,7 @@ const TradingPage = () => {
 
     try {
 
-      const segment = getSymbolCategory(selectedInstrument.symbol)
+      const segment = getSymbolCategory(selectedInstrument.symbol, selectedInstrument)
 
       const side = pendingOrderType.includes('BUY') ? 'BUY' : 'SELL'
 
